@@ -1,0 +1,8 @@
+LIBRARY	"colorwheel"
+
+EXPORTS
+
+	colorwheel_set_subclass_form
+	colorwheel_un_subclass_form
+	colorwheel_set_rgb_grayscale_adjustments
+	colorwheel_get_rgb_at_xy
