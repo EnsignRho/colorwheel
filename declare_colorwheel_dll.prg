@@ -12,19 +12,20 @@ DECLARE				colorwheel_un_subclass_form IN colorwheel.dll
 
 * Indicate the new / updated color image that should be drawn
 DECLARE				colorwheel_set_rgb_grayscale_adjustments IN colorwheel.dll ;
-						INTEGER	tnRed, ;
-						INTEGER	tnGrn, ;
-						INTEGER	tnBlu, ;
-						INTEGER	tnGray, ;
-						INTEGER	tnPastel, ;
-						INTEGER	tnLinear, ;
-						INTEGER tnRotation
+						INTEGER	nRed, ;
+						INTEGER	nGrn, ;
+						INTEGER	nBlu, ;
+						INTEGER	nGray, ;
+						INTEGER	nPastel, ;
+						INTEGER	nLinear, ;
+						INTEGER nRotation, ;
+						INTEGER nAlgorithm
 
 * Returns the RGB() value for the color at X,Y within the color image
 DECLARE INTEGER		colorwheel_get_rgb_at_xy IN colorwheel.dll ;
-						INTEGER	@tnX, ;
-						INTEGER	@tnY
+						INTEGER	@nX, ;
+						INTEGER	@nY
 
 * Sets the RGB() value the user is using
 DECLARE INTEGER		colorwheel_set_rgb IN colorwheel.dll ;
-						INTEGER	tnRgb
+						INTEGER	nRgb

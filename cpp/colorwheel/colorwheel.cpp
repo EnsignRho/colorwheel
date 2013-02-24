@@ -68,8 +68,9 @@ int			gnRed			= 255;
 int			gnGrn			= 255;
 int			gnBlu			= 255;
 int			gnGray			= 0;
-int			gnPastel		= 0;
-int			gnLinear		= 0;
+int			gnPastel		= 50;
+int			gnLinear		= 50;
+int			gnRotation		= 0;
 
 
 // Structure for accessing RGB data within the DIB section
@@ -185,7 +186,7 @@ struct SRGB
 // Called to set the color values for the next color render operation
 //
 //////
-	COLORWHEEL_API void colorwheel_set_rgb_grayscale_adjustments(int tnRed, int tnGrn, int tnBlu, int tnGray, int tnPastel, int tnLinear, int tnRotation)
+	COLORWHEEL_API void colorwheel_set_rgb_grayscale_adjustments(int tnRed, int tnGrn, int tnBlu, int tnGray, int tnPastel, int tnLinear, int tnRotation, int tnAlgorithm)
 	{
 		DWORD lnThreadId;
 
@@ -198,7 +199,13 @@ struct SRGB
 		// These are all percents
 		gnGray		= max(min(tnGray,		100), 0);
 		gnPastel	= max(min(tnPastel,		100), 0);
-		gnLinear	= max(min(tnRotation,	100), 0);
+		gnLinear	= max(min(tnLinear,		100), 0);
+
+		// Rotation is the color rotation, from 0..255
+		gnRotation	= max(min(tnRotation,	255), 0);
+
+		// Store the rendering algorithm
+		gnAlgorithm	= max(min(tnAlgorithm,	4), 1);
 
 		// Redraw the colorChart
 		CreateThread(NULL, NULL, &buildColorWheelThreadProc, NULL, NULL, &lnThreadId);
@@ -247,6 +254,7 @@ struct SRGB
 	{
 		float r1, g1, b1;
 		float r2, g2, b2;
+		float r3, g3, b3;
 		float lfGray, lfMask, lfMaskM;
 
 		// Grab colors
@@ -282,17 +290,76 @@ struct SRGB
 				break;
 		}
 
-/*
-		if (gnPastel != 0)
+		// We rotate the colors
+		if (gnRotation != 0)
 		{
-			// Apply pastel effect
+			r1 = (float)lnRed;
+			g1 = (float)lnGrn;
+			b1 = (float)lnBlu;
+
+			r2 = r1 / 255.0f;
+			g2 = g1 / 255.0f;
+			b2 = b1 / 255.0f;
+
+			// Determine our rotation
+			lfMask = _2PI * (float)gnRotation / 255.0f;
+			if (lfMask >= 0.0f && lfMask < _2PI_3)
+			{
+				// In the range 0..2*pi/3
+				r3 = r1 * (_2PI_3 - lfMask) / _2PI_3;
+				g3 = g1;
+				b3 = b1 * lfMask / _2PI_3;
+
+			} else if (lfMask >= _2PI_3 && lfMask < _4PI_3) {
+				// In the range 2*pi/3..4*pi/3
+				r3 = r1 * (lfMask - _2PI_3) / _2PI_3;
+				g3 = g1 * (_4PI_3 - lfMask) / _2PI_3;
+				b3 = b1;
+
+			} else {
+				// In the range 4*pi/3..2*pi
+				r3 = r1;
+				g3 = g1 * (lfMask - _4PI_3) / _2PI_3;
+				b3 = b1 * (1.0f - ((lfMask - _4PI_3) / _2PI_3));
+			}
+
+			lnRed = (unsigned char)r3;
+			lnGrn = (unsigned char)g3;
+			lnBlu = (unsigned char)b3;
 		}
 
-		if (gnLinear != 0)
+		if (gnPastel != 50)
+		{
+			// Apply pastel effect
+			lfMask	= (((float)gnPastel - 50.0f) / 50.0f);
+			if (lfMask < 0.0f)
+			{
+				// It's gone negative
+				lfMaskM = 1.0f + lfMask;
+				lfMask = 0.0f;
+
+			} else {
+				// Still positive
+				lfMaskM = 1.0f - lfMask;
+			}
+
+			// Pastel proportionally
+			lnRed	= (unsigned char)min((lfMask * 255.0f) + (lfMaskM * (float)lnRed), 255.0f);
+			lnGrn	= (unsigned char)min((lfMask * 255.0f) + (lfMaskM * (float)lnGrn), 255.0f);
+			lnBlu	= (unsigned char)min((lfMask * 255.0f) + (lfMaskM * (float)lnBlu), 255.0f);
+		}
+
+		if (gnLinear != 50)
 		{
 			// Apply linear effect
+			lfMaskM	= 1.0f + (((float)gnLinear - 50.0f) / 50.0f);
+
+			// Linear proportionally
+			lnRed	= (unsigned char)min(lfMaskM * (float)lnRed, 255.0f);
+			lnGrn	= (unsigned char)min(lfMaskM * (float)lnGrn, 255.0f);
+			lnBlu	= (unsigned char)min(lfMaskM * (float)lnBlu, 255.0f);
 		}
-*/
+
 		if (gnGray != 0)
 		{
 			// Apply grayscaling
