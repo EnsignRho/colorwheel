@@ -43,8 +43,14 @@
 // Note: To view properly, set tabs to 4 characters.
 COLORWHEEL_API void		colorwheel_set_subclass_form				(HWND tnHwndParent, int tnX, int tnY, int tnWidth, int tnHeight);
 COLORWHEEL_API void		colorwheel_un_subclass_form					(void);
-COLORWHEEL_API void		colorwheel_set_rgb_grayscale_adjustments	(int tnRed, int tnGrn, int tnBlu, int tnGray, int tnPastel, int tnLinear);
-COLORWHEEL_API int		colorwheel_get_rgb_at_xy					(int x, int y);
+COLORWHEEL_API void		colorwheel_set_rgb_grayscale_adjustments	(int tnRed, int tnGrn, int tnBlu, int tnGray, int tnPastel, int tnLinear, int tnRotation);
+COLORWHEEL_API int		colorwheel_get_rgb_at_xy					(int* tnX, int* tnY);
+COLORWHEEL_API int		colorwheel_set_rgb							(int tnRgb);
+COLORWHEEL_API void		colorwheel_set_algorithms					(int tnColorChart);
 
 // Local/internal function prototype definitions
+DWORD WINAPI			buildColorWheelThreadProc					(LPVOID lpParameter);
 LRESULT CALLBACK		colorChartWndProc							(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+void					iGetColorAtCoordinate						(float theta, float phi, unsigned char& lnRed, unsigned char& lnGrn, unsigned char& lnBlu);
+void					iDeriveColors								(float theta, float& lfRed, float& lfGrn, float& lfBlu);
+void CALLBACK			TimerProc									(HWND hWnd, UINT nMsg, UINT nIDEvent, DWORD dwTime);
