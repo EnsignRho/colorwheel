@@ -14,6 +14,7 @@ del colorwheel.ilk
 del colorwheel.lib
 del colorwheel.pdb
 del *.fxp
+del *.bak
 
 REM All done
 pause

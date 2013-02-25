@@ -52,5 +52,6 @@ COLORWHEEL_API void		colorwheel_set_algorithms					(int tnColorChart);
 DWORD WINAPI			buildColorWheelThreadProc					(LPVOID lpParameter);
 LRESULT CALLBACK		colorChartWndProc							(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 void					iGetColorAtCoordinate						(float theta, float phi, unsigned char& lnRed, unsigned char& lnGrn, unsigned char& lnBlu);
+void					iDeriveColorsRotated						(float tfTheta, float& tfR1, float& tfG1, float& tfB1, float& tfR2, float& tfG2, float& tfB2);
 void					iDeriveColors								(float theta, float& lfRed, float& lfGrn, float& lfBlu);
 void CALLBACK			TimerProc									(HWND hWnd, UINT nMsg, UINT nIDEvent, DWORD dwTime);

@@ -11,6 +11,7 @@
 //////
 // Change log:
 // February 23, 2013 - Initial creation
+// February 25, 2013 - Changes to rotation algorithm
 //////
 //
 // This software is released as Liberty Software under a Repeat License, as governed
@@ -255,7 +256,9 @@ struct SRGB
 		float r1, g1, b1;
 		float r2, g2, b2;
 		float r3, g3, b3;
-		float lfGray, lfMask, lfMaskM;
+		float r4, g4, b4;
+		float r5, g5, b5;
+		float lfGray, lfMask, lfMaskM, lfTheta;
 
 		// Grab colors
 		iDeriveColors(theta, r1, g1, b1);
@@ -291,42 +294,26 @@ struct SRGB
 		}
 
 		// We rotate the colors
-		if (gnRotation != 0)
-		{
+//		if (gnRotation != 0)
+//		{
 			r1 = (float)lnRed;
 			g1 = (float)lnGrn;
 			b1 = (float)lnBlu;
+			// Note:  r2,g2,b2 will be computed below as our final output color
 
-			r2 = r1 / 255.0f;
-			g2 = g1 / 255.0f;
-			b2 = b1 / 255.0f;
+			// Determine our rotation as 0..2pi
+			lfTheta = _2PI * (float)gnRotation / 255.0f;
 
-			// Determine our rotation
-			lfMask = _2PI * (float)gnRotation / 255.0f;
-			if (lfMask >= 0.0f && lfMask < _2PI_3)
-			{
-				// In the range 0..2*pi/3
-				r3 = r1 * (_2PI_3 - lfMask) / _2PI_3;
-				g3 = g1;
-				b3 = b1 * lfMask / _2PI_3;
+			// Get colors at each interval (Red at red, red at grn, red at blu,
+			iDeriveColorsRotated(lfTheta,			r1,g1,b1, r3,g3,b3);
+			iDeriveColorsRotated(lfTheta + _2PI_3,	g1,b1,r1, r4,g4,b4);
+			iDeriveColorsRotated(lfTheta + _4PI_3,	b1,r1,g1, r5,g5,b5);
 
-			} else if (lfMask >= _2PI_3 && lfMask < _4PI_3) {
-				// In the range 2*pi/3..4*pi/3
-				r3 = r1 * (lfMask - _2PI_3) / _2PI_3;
-				g3 = g1 * (_4PI_3 - lfMask) / _2PI_3;
-				b3 = b1;
-
-			} else {
-				// In the range 4*pi/3..2*pi
-				r3 = r1;
-				g3 = g1 * (lfMask - _4PI_3) / _2PI_3;
-				b3 = b1 * (1.0f - ((lfMask - _4PI_3) / _2PI_3));
-			}
-
-			lnRed = (unsigned char)r3;
-			lnGrn = (unsigned char)g3;
-			lnBlu = (unsigned char)b3;
-		}
+			// Based on lfTheta, apply appropriate color interval
+			lnRed = (unsigned char)((r3 + r4 + r5) / 2.0f);
+			lnGrn = (unsigned char)((g3 + g4 + g5) / 2.0f);
+			lnBlu = (unsigned char)((b3 + b4 + b5) / 2.0f);
+//		}
 
 		if (gnPastel != 50)
 		{
@@ -371,6 +358,36 @@ struct SRGB
 			lnRed	= (unsigned char)((lfMask * lfGray) + (lfMaskM * (float)lnRed));
 			lnGrn	= (unsigned char)((lfMask * lfGray) + (lfMaskM * (float)lnGrn));
 			lnBlu	= (unsigned char)((lfMask * lfGray) + (lfMaskM * (float)lnBlu));
+		}
+	}
+
+	void iDeriveColorsRotated(float tfTheta, float& tfR1, float& tfG1, float& tfB1, float& tfR2, float& tfG2, float& tfB2)
+	{
+		// Make sure it's >= 0.0 and <= _2PI
+		while (tfTheta < 0.0)
+			tfTheta += _2PI;
+		while (tfTheta > _2PI)
+			tfTheta -= _2PI;
+
+		// Based on the range, adjust the color
+		if (tfTheta >= 0.0f && tfTheta < _2PI_3)
+		{
+			// In the range 0..2*pi/3
+			tfR2 = tfR1 * (_2PI_3 - tfTheta) / _2PI_3;
+			tfG2 = tfG1;
+			tfB2 = tfB1 * tfTheta / _2PI_3;
+
+		} else if (tfTheta >= _2PI_3 && tfTheta < _4PI_3) {
+			// In the range 2*pi/3..4*pi/3
+			tfR2 = tfR1 * (tfTheta - _2PI_3) / _2PI_3;
+			tfG2 = tfG1 * (_4PI_3 - tfTheta) / _2PI_3;
+			tfB2 = tfB1;
+
+		} else {
+			// In the range 4*pi/3..2*pi
+			tfR2 = tfR1;
+			tfG2 = tfG1 * (tfTheta - _4PI_3) / _2PI_3;
+			tfB2 = tfB1 * (1.0f - ((tfTheta - _4PI_3) / _2PI_3));
 		}
 	}
 
@@ -420,18 +437,23 @@ struct SRGB
 		SRGB* lrgb;
 
 
-		if (glManualColor)
+		// In the cases where we're not using our already computed rgb color, we have to extract the most recent
+		// Note:  This could be shifted to the mouse inquiry area
+		if (!glManualColor)
 		{
-			// They have explicitly set a color
-			return(RGB(gnRed, gnGrn, gnBlu));
-
-		} else {
 			// Look into the bitmap and see what's at that location
 			*tnX	= gnMouseX;
 			*tnY	= gnMouseY;
 			lrgb	= (SRGB*)(gcBits + ((gbmi.bmiHeader.biHeight - min(gnMouseY, gbmi.bmiHeader.biHeight - 1) - 1) * gnActualWidth) + (min(gnMouseX, gbmi.bmiHeader.biWidth) * 3));
-			return(RGB(lrgb->red, lrgb->grn, lrgb->blu));
+
+			// Grab the color channels of that pixel
+			gnRed	= lrgb->red;
+			gnGrn	= lrgb->grn;
+			gnBlu	= lrgb->blu;
 		}
+
+		// Return the now explicit color
+		return(RGB(gnRed, gnGrn, gnBlu));
 	}
 
 	COLORWHEEL_API int colorwheel_set_rgb(int tnRgb)
